@@ -8,6 +8,8 @@ export function formatMoney(amount: number): string {
   }).format(amount);
 }
 
+export const formatCurrency = formatMoney;
+
 export function getStockStatus(qty: number): StockStatus {
   if (qty === 0) return 'out';
   if (qty <= 5) return 'low';

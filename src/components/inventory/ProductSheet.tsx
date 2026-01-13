@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { Product, AuditEntry, ADJUSTMENT_REASONS } from '@/types/inventory';
+import { Product, AuditEntry, ADJUSTMENT_REASONS, PaymentType } from '@/types/inventory';
 import { formatDateTime } from '@/lib/formatters';
 
 interface ProductSheetProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onStockAdjust: (delta: number, reason: string, notes: string) => void;
+  onStockAdjust: (delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date) => void;
   onPricingSave: (sellPrice: number, costPrice: number) => void;
   auditEntries: AuditEntry[];
 }
@@ -26,6 +26,8 @@ export function ProductSheet({
   const [adjustQty, setAdjustQty] = useState(1);
   const [reason, setReason] = useState<string>(ADJUSTMENT_REASONS[0]);
   const [notes, setNotes] = useState('');
+  const [paymentType, setPaymentType] = useState<PaymentType>('cash');
+  const [bnplDueDate, setBnplDueDate] = useState<string>('');
 
   useEffect(() => {
     if (product) {
@@ -33,6 +35,8 @@ export function ProductSheet({
       setCostPrice(product.costPrice);
       setAdjustQty(1);
       setNotes('');
+      setPaymentType('cash');
+      setBnplDueDate('');
     }
   }, [product]);
 
@@ -44,9 +48,10 @@ export function ProductSheet({
     }
   };
 
-  const handleStockOut = () => {
+  const handleSale = () => {
     if (adjustQty > 0) {
-      onStockAdjust(-adjustQty, reason, notes);
+      const dueDate = paymentType === 'bnpl' && bnplDueDate ? new Date(bnplDueDate) : undefined;
+      onStockAdjust(-adjustQty, 'Sale', notes, paymentType, dueDate);
     }
   };
 
@@ -167,6 +172,46 @@ export function ProductSheet({
                 </div>
               </div>
 
+              {/* Payment Type for Sales */}
+              <div className="border border-border rounded-[14px] p-2.5 bg-card">
+                <label className="block text-[11px] text-muted-foreground mb-1.5">Payment Type (for Sales)</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPaymentType('cash')}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                      paymentType === 'cash'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    💵 Cash
+                  </button>
+                  <button
+                    onClick={() => setPaymentType('bnpl')}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                      paymentType === 'bnpl'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    📅 Buy Now Pay Later
+                  </button>
+                </div>
+              </div>
+
+              {paymentType === 'bnpl' && (
+                <div className="border border-border rounded-[14px] p-2.5 bg-card">
+                  <label className="block text-[11px] text-muted-foreground mb-1.5">Payment Due Date</label>
+                  <input
+                    type="date"
+                    value={bnplDueDate}
+                    onChange={(e) => setBnplDueDate(e.target.value)}
+                    className="w-full border-none outline-none text-sm bg-transparent"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2.5">
                 <button
                   onClick={handleStockIn}
@@ -175,10 +220,10 @@ export function ProductSheet({
                   + Stock In
                 </button>
                 <button
-                  onClick={handleStockOut}
+                  onClick={handleSale}
                   className="bg-destructive text-destructive-foreground rounded-[14px] py-3 px-3 font-extrabold text-sm"
                 >
-                  − Stock Out
+                  💰 Sale
                 </button>
               </div>
 
@@ -190,7 +235,7 @@ export function ProductSheet({
               </button>
 
               <button className="bg-card border border-border text-foreground rounded-[14px] py-3 px-3 font-extrabold text-sm">
-                Open in Odoo (Mock)
+                View Product History
               </button>
 
               <div className="border border-border rounded-2xl bg-card p-2.5">
@@ -208,7 +253,17 @@ export function ProductSheet({
                     >
                       <div>
                         <div>{formatDateTime(entry.timestamp)}</div>
-                        <strong className="text-foreground">{entry.reason}</strong>
+                        <strong className="text-foreground">
+                          {entry.reason}
+                          {entry.reason === 'Sale' && entry.paymentType && (
+                            <span className="ml-1 text-xs">
+                              ({entry.paymentType === 'cash' ? '💵 Cash' : '📅 BNPL'})
+                            </span>
+                          )}
+                        </strong>
+                        {entry.paymentType === 'bnpl' && entry.bnplDueDate && (
+                          <div className="text-warning">Due: {formatDateTime(entry.bnplDueDate)}</div>
+                        )}
                         <div>{entry.notes || <span className="text-muted-foreground">No notes</span>}</div>
                       </div>
                       <div className="text-right">

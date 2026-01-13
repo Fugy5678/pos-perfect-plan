@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Product, AuditEntry, FilterType, ViewType } from '@/types/inventory';
+import { Product, AuditEntry, FilterType, ViewType, PaymentType } from '@/types/inventory';
 import { initialProducts } from '@/data/products';
 import { Header } from '@/components/inventory/Header';
 import { ProductGrid } from '@/components/inventory/ProductGrid';
@@ -38,7 +38,7 @@ export default function Index() {
     handleProductClick(randomProduct);
   }, [products, handleProductClick]);
 
-  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string) => {
+  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date) => {
     if (!selectedProduct) return;
 
     const before = selectedProduct.qty;
@@ -52,6 +52,7 @@ export default function Index() {
 
     setSelectedProduct((prev) => (prev ? { ...prev, qty: after } : null));
 
+    const isSale = reason === 'Sale';
     const entry: AuditEntry = {
       id: crypto.randomUUID(),
       timestamp: new Date(),
@@ -63,10 +64,19 @@ export default function Index() {
       reason,
       notes,
       session: SESSION,
+      paymentType: isSale ? paymentType : undefined,
+      bnplDueDate: isSale ? bnplDueDate : undefined,
+      saleAmount: isSale ? selectedProduct.sellPrice * Math.abs(delta) : undefined,
+      costAmount: isSale ? selectedProduct.costPrice * Math.abs(delta) : undefined,
     };
 
     setAuditLog((prev) => [entry, ...prev]);
-    toast.success(`${delta > 0 ? 'Stock in' : 'Stock out'} saved (mock)`);
+    
+    if (isSale) {
+      toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : '📅 BNPL'}`);
+    } else {
+      toast.success(`${delta > 0 ? 'Stock in' : 'Adjustment'} saved`);
+    }
   }, [selectedProduct]);
 
   const handlePricingSave = useCallback((sellPrice: number, costPrice: number) => {
@@ -118,7 +128,7 @@ export default function Index() {
           <StockTakeView products={products} onProductClick={handleProductClick} />
         )}
 
-        {activeView === 'reports' && <ReportsView />}
+        {activeView === 'reports' && <ReportsView auditLog={auditLog} />}
 
         {activeView === 'pricing' && <PricingView />}
       </main>
