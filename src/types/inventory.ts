@@ -24,7 +24,7 @@ export interface AuditEntry {
 
 export type StockStatus = 'ok' | 'low' | 'out';
 
-export type FilterType = 'ALL' | 'LOW' | 'OUT' | 'CLOTHING' | 'FOOTWEAR' | 'COSMETICS';
+export type FilterType = 'ALL' | 'LOW' | 'OUT' | 'FOOTWEAR' | 'CLOTHING' | 'ACCESSORIES' | 'HOME';
 
 export type ViewType = 'products' | 'stocktake' | 'reports' | 'pricing';
 
@@ -36,3 +36,5 @@ export const ADJUSTMENT_REASONS = [
   'Shrink / Theft',
   'Stock Count Correction',
 ] as const;
+
+export const CATEGORIES = ['FOOTWEAR', 'CLOTHING', 'ACCESSORIES', 'HOME'] as const;

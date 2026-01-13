@@ -16,7 +16,7 @@ export function ProductGrid({ products, searchQuery, activeFilter, onProductClic
       activeFilter === 'ALL' ||
       (activeFilter === 'LOW' && p.qty > 0 && p.qty <= 5) ||
       (activeFilter === 'OUT' && p.qty === 0) ||
-      (['CLOTHING', 'FOOTWEAR', 'COSMETICS'].includes(activeFilter) && p.category === activeFilter);
+      (['FOOTWEAR', 'CLOTHING', 'ACCESSORIES', 'HOME'].includes(activeFilter) && p.category === activeFilter);
     return matchesQuery && matchesFilter;
   });
 
