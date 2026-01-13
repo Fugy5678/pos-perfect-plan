@@ -40,8 +40,7 @@ export function Header({
             aria-hidden="true"
           />
           <div className="leading-tight">
-            <strong className="block text-sm font-bold">Inventory POS</strong>
-            <small className="block text-xs text-muted-foreground">Odoo-style • Mobile-first</small>
+            <strong className="block text-sm font-bold">Millow Closset POS</strong>
           </div>
         </div>
         <div className="text-xs text-muted-foreground border border-border py-1.5 px-2.5 rounded-full bg-card whitespace-nowrap">
