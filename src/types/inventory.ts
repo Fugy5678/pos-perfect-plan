@@ -9,6 +9,8 @@ export interface Product {
   costPrice: number;
 }
 
+export type PaymentType = 'cash' | 'bnpl';
+
 export interface AuditEntry {
   id: string;
   timestamp: Date;
@@ -20,6 +22,10 @@ export interface AuditEntry {
   reason: string;
   notes: string;
   session: string;
+  paymentType?: PaymentType;
+  bnplDueDate?: Date;
+  saleAmount?: number;
+  costAmount?: number;
 }
 
 export type StockStatus = 'ok' | 'low' | 'out';
@@ -36,5 +42,7 @@ export const ADJUSTMENT_REASONS = [
   'Shrink / Theft',
   'Stock Count Correction',
 ] as const;
+
+export const SALE_REASONS = ['Sale'] as const;
 
 export const CATEGORIES = ['FOOTWEAR', 'CLOTHING', 'ACCESSORIES', 'HOME'] as const;
