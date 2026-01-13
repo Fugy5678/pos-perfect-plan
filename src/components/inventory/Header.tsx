@@ -6,9 +6,10 @@ const FILTERS: { value: FilterType; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'LOW', label: 'Low stock' },
   { value: 'OUT', label: 'Out of stock' },
-  { value: 'CLOTHING', label: 'Clothing' },
   { value: 'FOOTWEAR', label: 'Footwear' },
-  { value: 'COSMETICS', label: 'Cosmetics' },
+  { value: 'CLOTHING', label: 'Clothing' },
+  { value: 'ACCESSORIES', label: 'Accessories' },
+  { value: 'HOME', label: 'Home' },
 ];
 
 interface HeaderProps {
