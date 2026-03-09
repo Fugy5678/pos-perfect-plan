@@ -1,0 +1,35 @@
+{
+  "name": "pos-server",
+  "version": "1.0.0",
+  "description": "POS Perfect Plan - Backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec npx tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.19.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.5",
+    "prisma": "^6.19.2",
+    "tsx": "^4.21.0"
+  }
+}

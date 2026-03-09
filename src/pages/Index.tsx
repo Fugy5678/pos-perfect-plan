@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Product, AuditEntry, FilterType, ViewType, PaymentType } from '@/types/inventory';
-import { initialProducts } from '@/data/products';
+import { Product, FilterType, ViewType, PaymentType } from '@/types/inventory';
 import { Header } from '@/components/inventory/Header';
 import { ProductGrid } from '@/components/inventory/ProductGrid';
 import { ProductSheet } from '@/components/inventory/ProductSheet';
@@ -9,12 +8,17 @@ import { BottomNav } from '@/components/inventory/BottomNav';
 import { StockTakeView } from '@/components/inventory/StockTakeView';
 import { ReportsView } from '@/components/inventory/ReportsView';
 import { PricingView } from '@/components/inventory/PricingView';
-
-const SESSION = 'FLOOR-AGENT';
+import { useAuth } from '@/context/AuthContext';
+import { useProducts, useCreateSale, useAdjustStock, useUpdatePricing } from '@/hooks/useInventory';
+import { Button } from '@/components/ui/button';
 
 export default function Index() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const { user, logout } = useAuth();
+  const { data: products = [], isLoading } = useProducts();
+  const { mutate: createSale } = useCreateSale();
+  const { mutate: adjustStock } = useAdjustStock();
+  const { mutate: updatePricing } = useUpdatePricing();
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -33,77 +37,82 @@ export default function Index() {
   }, []);
 
   const handleScan = useCallback(() => {
+    if (!products.length) return;
     const randomProduct = products[Math.floor(Math.random() * products.length)];
-    toast.info(`Scanned: ${randomProduct.sku} (mock)`);
+    toast.info(`Scanned: ${randomProduct.sku}`);
     handleProductClick(randomProduct);
   }, [products, handleProductClick]);
 
-  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date) => {
+  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType) => {
     if (!selectedProduct) return;
 
-    const before = selectedProduct.qty;
-    const after = Math.max(0, before + delta);
-
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct.id ? { ...p, qty: after } : p
-      )
-    );
-
-    setSelectedProduct((prev) => (prev ? { ...prev, qty: after } : null));
-
     const isSale = reason === 'Sale';
-    const entry: AuditEntry = {
-      id: crypto.randomUUID(),
-      timestamp: new Date(),
-      sku: selectedProduct.sku,
-      productName: selectedProduct.name,
-      delta,
-      before,
-      after,
-      reason,
-      notes,
-      session: SESSION,
-      paymentType: isSale ? paymentType : undefined,
-      bnplDueDate: isSale ? bnplDueDate : undefined,
-      saleAmount: isSale ? selectedProduct.sellPrice * Math.abs(delta) : undefined,
-      costAmount: isSale ? selectedProduct.costPrice * Math.abs(delta) : undefined,
-    };
 
-    setAuditLog((prev) => [entry, ...prev]);
-    
     if (isSale) {
-      toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : '📅 BNPL'}`);
+      if (delta >= 0) {
+        toast.error("Sales must reduce stock quantity.");
+        return;
+      }
+      createSale({
+        items: [{ productId: selectedProduct.id, qty: Math.abs(delta) }],
+        amountPaid: Number(selectedProduct.sellPrice) * Math.abs(delta),
+        paymentMode: (paymentType || 'CASH').toUpperCase(),
+        notes,
+      }, {
+        onSuccess: () => {
+          toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : '💳 Card/Mpesa'}`);
+          setIsSheetOpen(false);
+        },
+        onError: (err: any) => toast.error(err.message)
+      });
     } else {
-      toast.success(`${delta > 0 ? 'Stock in' : 'Adjustment'} saved`);
+      const type = delta > 0 ? 'PURCHASE' : 'ADJUSTMENT';
+      const after = Math.max(0, selectedProduct.qty + delta);
+      adjustStock({
+        id: selectedProduct.id,
+        qty: after,
+        type,
+        reason: notes || reason,
+      }, {
+        onSuccess: () => {
+          toast.success(`${delta > 0 ? 'Stock in' : 'Adjustment'} saved to Database`);
+          setIsSheetOpen(false);
+        },
+        onError: (err: any) => toast.error(err.message)
+      });
     }
-  }, [selectedProduct]);
+  }, [selectedProduct, createSale, adjustStock]);
 
   const handlePricingSave = useCallback((sellPrice: number, costPrice: number) => {
     if (!selectedProduct) return;
-
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct.id
-          ? { ...p, sellPrice: Math.max(0, sellPrice), costPrice: Math.max(0, costPrice) }
-          : p
-      )
-    );
-
-    setSelectedProduct((prev) =>
-      prev ? { ...prev, sellPrice: Math.max(0, sellPrice), costPrice: Math.max(0, costPrice) } : null
-    );
-
-    toast.success('Pricing saved (mock)');
-  }, [selectedProduct]);
+    updatePricing({
+      id: selectedProduct.id,
+      name: selectedProduct.name,
+      category: selectedProduct.category,
+      qty: selectedProduct.qty,
+      reorder: selectedProduct.reorder,
+      sellPrice,
+      costPrice,
+    }, {
+      onSuccess: () => {
+        toast.success('Pricing successfully updated in database');
+        setIsSheetOpen(false);
+      },
+      onError: (err: any) => toast.error(err.message)
+    });
+  }, [selectedProduct, updatePricing]);
 
   const handleViewChange = useCallback((view: ViewType) => {
     setActiveView(view);
     setIsSheetOpen(false);
   }, []);
 
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading pos terminal...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -113,6 +122,10 @@ export default function Index() {
         onToggleFilters={() => setShowFilters((prev) => !prev)}
         onScan={handleScan}
       />
+
+      <div className="absolute top-3 right-16 z-50">
+        <Button variant="destructive" size="sm" onClick={logout}>Sign Out</Button>
+      </div>
 
       <main className="p-3 pb-[86px] max-w-[1200px] mx-auto md:p-5 md:pb-[86px]">
         {activeView === 'products' && (
@@ -128,7 +141,7 @@ export default function Index() {
           <StockTakeView products={products} onProductClick={handleProductClick} />
         )}
 
-        {activeView === 'reports' && <ReportsView auditLog={auditLog} />}
+        {activeView === 'reports' && <ReportsView auditLog={[]} />}
 
         {activeView === 'pricing' && <PricingView />}
       </main>
@@ -139,7 +152,7 @@ export default function Index() {
         onClose={handleCloseSheet}
         onStockAdjust={handleStockAdjust}
         onPricingSave={handlePricingSave}
-        auditEntries={auditLog}
+        auditEntries={[]}
       />
 
       <BottomNav activeView={activeView} onViewChange={handleViewChange} />
