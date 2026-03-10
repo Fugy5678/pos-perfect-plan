@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { authMiddleware, requireRole } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // POST /api/sales  – create a new sale and deduct stock
+// Attribution is stored as a text prefix in the notes field: "[By: AdminName] ..." or "[Agent: AgentName] ..."
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
-    const { items, discount, amountPaid, paymentMode, notes, attributedToUserId } = req.body;
+    const { items, discount, amountPaid, paymentMode, notes, attributedToName } = req.body;
     const userId = (req as any).user.id;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -15,7 +16,6 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     try {
         const sale = await prisma.$transaction(async (tx) => {
-            // Calculate totals
             let subtotal = 0;
             const resolvedItems: any[] = [];
 
@@ -34,19 +34,22 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
             const change = Number(amountPaid) - total;
             const receiptNo = `RCP-${Date.now()}`;
 
-            // Create sale record
+            // Build notes with optional attribution prefix
+            const resolvedNotes = attributedToName
+                ? `[${attributedToName}]${notes ? ' ' + notes : ''}`
+                : notes || null;
+
             const newSale = await tx.sale.create({
                 data: {
                     receiptNo,
                     userId,
-                    attributedToUserId: attributedToUserId ? Number(attributedToUserId) : null,
                     subtotal,
                     discount: discountAmt,
                     total,
                     amountPaid: Number(amountPaid),
                     change,
                     paymentMode: paymentMode || 'CASH',
-                    notes,
+                    notes: resolvedNotes,
                     items: {
                         create: resolvedItems.map((i) => ({
                             productId: i.product.id,
@@ -56,7 +59,10 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
                         })),
                     },
                 },
-                include: { items: { include: { product: true } }, user: { select: { name: true } }, attributedTo: { select: { name: true } } },
+                include: {
+                    items: { include: { product: true } },
+                    user: { select: { name: true } },
+                },
             });
 
             // Deduct stock and log movements
@@ -84,7 +90,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/sales  – list sales with pagination
+// GET /api/sales  – list sales, agents only see their own
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
@@ -102,7 +108,6 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
                 orderBy: { createdAt: 'desc' },
                 include: {
                     user: { select: { name: true } },
-                    attributedTo: { select: { name: true } },
                     items: { include: { product: { select: { name: true, sku: true } } } },
                 },
             }),
@@ -115,7 +120,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/sales/:id  – single sale with full details
+// GET /api/sales/:id
 router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {

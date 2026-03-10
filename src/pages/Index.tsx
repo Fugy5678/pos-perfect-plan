@@ -47,7 +47,7 @@ export default function Index() {
     handleProductClick(randomProduct);
   }, [products, handleProductClick]);
 
-  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date, attributedToUserId?: number | null) => {
+  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date, attributedToName?: string | null) => {
     if (!selectedProduct) return;
 
     const isSale = reason === 'Sale';
@@ -62,7 +62,7 @@ export default function Index() {
         amountPaid: Number(selectedProduct.sellPrice) * Math.abs(delta),
         paymentMode: (paymentType || 'CASH').toUpperCase(),
         notes,
-        attributedToUserId: attributedToUserId ?? null,
+        attributedToName: attributedToName ?? null,
       }, {
         onSuccess: () => {
           toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : paymentType === 'bnpl' ? '📅 BNPL' : '💵 Cash'}`);

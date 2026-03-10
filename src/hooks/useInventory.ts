@@ -46,7 +46,7 @@ export const useCreateSale = () => {
             amountPaid: number;
             paymentMode: string;
             notes?: string;
-            attributedToUserId?: number | null;
+            attributedToName?: string | null;
         }) =>
             fetchWithAuth(`/sales`, {
                 method: 'POST',

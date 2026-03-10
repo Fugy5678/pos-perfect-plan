@@ -20,7 +20,6 @@ interface Sale {
     notes?: string;
     createdAt: string;
     user: { name: string };
-    attributedTo?: { name: string } | null;
     items: SaleItem[];
 }
 
@@ -80,63 +79,75 @@ export function MySalesView() {
 
             {/* Sales list */}
             <div className="space-y-2.5">
-                {sales.map((sale) => (
-                    <div
-                        key={sale.id}
-                        className="border border-border rounded-[14px] p-3 bg-card space-y-2"
-                    >
-                        {/* Header row */}
-                        <div className="flex items-start justify-between gap-2">
-                            <div>
-                                <p className="text-sm font-bold">{sale.receiptNo}</p>
-                                <p className="text-[11px] text-muted-foreground">
-                                    {new Date(sale.createdAt).toLocaleString('en-KE', {
-                                        day: 'numeric', month: 'short', year: 'numeric',
-                                        hour: '2-digit', minute: '2-digit',
-                                    })}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-bold text-primary">
-                                    KES {Number(sale.total).toLocaleString()}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                    {PAYMENT_ICON[sale.paymentMode] || '💰'} {sale.paymentMode}
-                                </p>
-                            </div>
-                        </div>
+                {sales.map((sale) => {
+                    let attributedName = null;
+                    let displayNotes = sale.notes;
+                    if (sale.notes && sale.notes.startsWith('[')) {
+                        const match = sale.notes.match(/^\[(.*?)\]\s*(.*)$/);
+                        if (match) {
+                            attributedName = match[1];
+                            displayNotes = match[2] || undefined;
+                        }
+                    }
 
-                        {/* Items */}
-                        <div className="space-y-1">
-                            {sale.items.map((item) => (
-                                <div key={item.id} className="flex justify-between text-xs text-muted-foreground">
-                                    <span>{item.product.name} × {item.qty}</span>
-                                    <span>KES {Number(item.total).toLocaleString()}</span>
+                    return (
+                        <div
+                            key={sale.id}
+                            className="border border-border rounded-[14px] p-3 bg-card space-y-2"
+                        >
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <p className="text-sm font-bold">{sale.receiptNo}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {new Date(sale.createdAt).toLocaleString('en-KE', {
+                                            day: 'numeric', month: 'short', year: 'numeric',
+                                            hour: '2-digit', minute: '2-digit',
+                                        })}
+                                    </p>
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Attribution / sold by */}
-                        {(isAdmin || sale.attributedTo) && (
-                            <div className="flex items-center gap-1.5 pt-1 border-t border-dashed border-border">
-                                <span className="text-[11px] text-muted-foreground">
-                                    {isAdmin && `Recorded by: ${sale.user.name}`}
-                                    {sale.attributedTo && (
-                                        <span className="ml-2 font-semibold text-primary">
-                                            👤 Agent: {sale.attributedTo.name}
-                                        </span>
-                                    )}
-                                </span>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-primary">
+                                        KES {Number(sale.total).toLocaleString()}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {PAYMENT_ICON[sale.paymentMode] || '💰'} {sale.paymentMode}
+                                    </p>
+                                </div>
                             </div>
-                        )}
 
-                        {sale.notes && (
-                            <p className="text-[11px] text-muted-foreground border-t border-dashed border-border pt-1">
-                                📝 {sale.notes}
-                            </p>
-                        )}
-                    </div>
-                ))}
+                            {/* Items */}
+                            <div className="space-y-1">
+                                {sale.items.map((item) => (
+                                    <div key={item.id} className="flex justify-between text-xs text-muted-foreground">
+                                        <span>{item.product.name} × {item.qty}</span>
+                                        <span>KES {Number(item.total).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Attribution / sold by */}
+                            {(isAdmin || attributedName) && (
+                                <div className="flex items-center gap-1.5 pt-1 border-t border-dashed border-border">
+                                    <span className="text-[11px] text-muted-foreground">
+                                        {isAdmin && `Recorded by: ${sale.user.name}`}
+                                        {attributedName && (
+                                            <span className="ml-2 font-semibold text-primary">
+                                                🏷️ Attributed to: {attributedName}
+                                            </span>
+                                        )}
+                                    </span>
+                                </div>
+                            )}
+
+                            {displayNotes && (
+                                <p className="text-[11px] text-muted-foreground border-t border-dashed border-border pt-1">
+                                    📝 {displayNotes}
+                                </p>
+                            )}
+                        </div>
+                    )
+                })}
             </div>
 
             {/* Pagination */}

@@ -10,7 +10,7 @@ interface ProductSheetProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onStockAdjust: (delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date, attributedToUserId?: number | null) => void;
+  onStockAdjust: (delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date, attributedToName?: string | null) => void;
   onPricingSave: (sellPrice: number, costPrice: number) => void;
   auditEntries: AuditEntry[];
 }
@@ -25,6 +25,7 @@ export function ProductSheet({
 }: ProductSheetProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const isAgent = user?.role === 'AGENT';
 
   const [sellPrice, setSellPrice] = useState(0);
   const [costPrice, setCostPrice] = useState(0);
@@ -33,17 +34,16 @@ export function ProductSheet({
   const [notes, setNotes] = useState('');
   const [paymentType, setPaymentType] = useState<PaymentType>('cash');
   const [bnplDueDate, setBnplDueDate] = useState<string>('');
-  const [attributedAgentId, setAttributedAgentId] = useState<string>('');
-  const [agents, setAgents] = useState<{ id: number; name: string }[]>([]);
+  const [attributedTo, setAttributedTo] = useState<string>('');
+  const [attributionList, setAttributionList] = useState<{ id: number; name: string }[]>([]);
 
-  // Fetch agents list for admin attribution dropdown
+  // Agents fetch admins to attribute to; Admins fetch agents to attribute to
   useEffect(() => {
-    if (isAdmin) {
-      fetchWithAuth('/users?role=AGENT')
-        .then((data: any) => setAgents(Array.isArray(data) ? data : data.users || []))
-        .catch(() => setAgents([]));
-    }
-  }, [isAdmin]);
+    const roleToFetch = isAgent ? 'ADMIN' : 'AGENT';
+    fetchWithAuth(`/users?role=${roleToFetch}`)
+      .then((data: any) => setAttributionList(Array.isArray(data) ? data : data.users || []))
+      .catch(() => setAttributionList([]));
+  }, [isAgent]);
 
   useEffect(() => {
     if (product) {
@@ -53,7 +53,7 @@ export function ProductSheet({
       setNotes('');
       setPaymentType('cash');
       setBnplDueDate('');
-      setAttributedAgentId('');
+      setAttributedTo('');
     }
   }, [product]);
 
@@ -74,7 +74,7 @@ export function ProductSheet({
         notes,
         paymentType,
         dueDate,
-        attributedAgentId ? Number(attributedAgentId) : null,
+        attributedTo || null,
       );
     }
   };
@@ -119,6 +119,8 @@ export function ProductSheet({
             </div>
 
             <div className="p-3 flex flex-col gap-3 max-h-[62vh] overflow-auto">
+
+              {/* Stock info */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="border border-border rounded-[14px] p-2.5 bg-card">
                   <label className="block text-[11px] text-muted-foreground mb-1.5">On Hand Qty</label>
@@ -130,8 +132,8 @@ export function ProductSheet({
                 </div>
               </div>
 
-              {/* Price info — hidden cost price from agents */}
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* Prices — agents can't see cost price */}
+              <div className={`grid gap-2.5 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 <div className="border border-border rounded-[14px] p-2.5 bg-card">
                   <label className="block text-[11px] text-muted-foreground mb-1.5">Selling Price (KES)</label>
                   <input
@@ -155,7 +157,7 @@ export function ProductSheet({
                 )}
               </div>
 
-              {/* Adjustment reason — only for admins (stock in/out) */}
+              {/* Adjustment reason — admins only */}
               {isAdmin && (
                 <div className="border border-border rounded-[14px] p-2.5 bg-card">
                   <label className="block text-[11px] text-muted-foreground mb-1.5">Adjustment Reason</label>
@@ -167,6 +169,7 @@ export function ProductSheet({
                 </div>
               )}
 
+              {/* Qty + Notes */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="border border-border rounded-[14px] p-2.5 bg-card">
                   <label className="block text-[11px] text-muted-foreground mb-1.5">Qty</label>
@@ -189,22 +192,24 @@ export function ProductSheet({
                 </div>
               </div>
 
-              {/* Agent Attribution — only for admin/super admin */}
-              {isAdmin && (
-                <div className="border border-border rounded-[14px] p-2.5 bg-card">
-                  <label className="block text-[11px] text-muted-foreground mb-1.5">👤 Attribute Sale To Agent</label>
-                  <select
-                    value={attributedAgentId}
-                    onChange={(e) => setAttributedAgentId(e.target.value)}
-                    className="w-full border-none outline-none text-sm bg-transparent"
-                  >
-                    <option value="">— Self / No attribution —</option>
-                    {agents.map((a) => (
-                      <option key={a.id} value={String(a.id)}>{a.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Attribution dropdown — shown to EVERYONE making a sale
+                  Agents → select Admin (whose stock they're selling)
+                  Admins → select Agent (who made the sale) */}
+              <div className="border border-border rounded-[14px] p-2.5 bg-card">
+                <label className="block text-[11px] text-muted-foreground mb-1.5">
+                  {isAgent ? '🏷️ Sale Attributed To (Admin / Owner)' : '👤 Sale Made By (Agent)'}
+                </label>
+                <select
+                  value={attributedTo}
+                  onChange={(e) => setAttributedTo(e.target.value)}
+                  className="w-full border-none outline-none text-sm bg-transparent"
+                >
+                  <option value="">— {isAgent ? 'Select admin' : 'Select agent (optional)'} —</option>
+                  {attributionList.map((u) => (
+                    <option key={u.id} value={u.name}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Payment Type — BNPL only for admins */}
               <div className="border border-border rounded-[14px] p-2.5 bg-card">
@@ -269,7 +274,7 @@ export function ProductSheet({
                 </button>
               )}
 
-              {/* Recent audit */}
+              {/* Recent audit entries */}
               {productAudit.length > 0 && (
                 <div className="border border-border rounded-2xl bg-card p-2.5">
                   <h4 className="text-[13px] font-bold mb-2">Recent Adjustments</h4>
