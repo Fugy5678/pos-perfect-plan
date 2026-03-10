@@ -1,4 +1,4 @@
-import { ClipboardList, Package, BarChart3, Tag, Users } from 'lucide-react';
+import { ClipboardList, Package, BarChart3, Tag, Users, ShoppingBag } from 'lucide-react';
 import { ViewType } from '@/types/inventory';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -10,12 +10,15 @@ interface BottomNavProps {
 
 export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
 
-  // Agents only see Products (sales). Admins see everything.
+  // Agents: Products (browse & sell) + Sales History
+  // Admins: Full access including Team management
   const navItems = isAgent
-    ? [{ view: 'products' as ViewType, label: 'My Sales', icon: ClipboardList }]
+    ? [
+      { view: 'products' as ViewType, label: 'Products', icon: ClipboardList },
+      { view: 'team' as ViewType, label: 'My Sales', icon: ShoppingBag },
+    ]
     : [
       { view: 'products' as ViewType, label: 'Products', icon: ClipboardList },
       { view: 'stocktake' as ViewType, label: 'Stock Take', icon: Package },
@@ -29,13 +32,15 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
       <div className="flex justify-around gap-2 max-w-[1200px] mx-auto">
         {navItems.map(({ view, label, icon: Icon }) => (
           <button
-            key={view}
+            key={view + label}
             onClick={() => onViewChange(view)}
             className={cn(
               'flex-1 flex flex-col items-center gap-1 py-2 px-1.5 rounded-[14px] cursor-pointer border border-transparent select-none transition-colors',
-              activeView === view
+              activeView === view && label !== 'My Sales'
                 ? 'border-primary/35 bg-primary/10'
-                : 'hover:bg-muted'
+                : activeView === view && label === 'My Sales'
+                  ? 'border-primary/35 bg-primary/10'
+                  : 'hover:bg-muted'
             )}
           >
             <Icon className={cn('w-5 h-5', activeView === view ? 'text-primary' : 'text-muted-foreground')} />

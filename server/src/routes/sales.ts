@@ -6,7 +6,7 @@ const router = Router();
 
 // POST /api/sales  – create a new sale and deduct stock
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
-    const { items, discount, amountPaid, paymentMode, notes } = req.body;
+    const { items, discount, amountPaid, paymentMode, notes, attributedToUserId } = req.body;
     const userId = (req as any).user.id;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -39,6 +39,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
                 data: {
                     receiptNo,
                     userId,
+                    attributedToUserId: attributedToUserId ? Number(attributedToUserId) : null,
                     subtotal,
                     discount: discountAmt,
                     total,
@@ -55,7 +56,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
                         })),
                     },
                 },
-                include: { items: { include: { product: true } }, user: true },
+                include: { items: { include: { product: true } }, user: { select: { name: true } }, attributedTo: { select: { name: true } } },
             });
 
             // Deduct stock and log movements
@@ -101,6 +102,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
                 orderBy: { createdAt: 'desc' },
                 include: {
                     user: { select: { name: true } },
+                    attributedTo: { select: { name: true } },
                     items: { include: { product: { select: { name: true, sku: true } } } },
                 },
             }),

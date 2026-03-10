@@ -46,6 +46,7 @@ export const useCreateSale = () => {
             amountPaid: number;
             paymentMode: string;
             notes?: string;
+            attributedToUserId?: number | null;
         }) =>
             fetchWithAuth(`/sales`, {
                 method: 'POST',
@@ -54,6 +55,7 @@ export const useCreateSale = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
             queryClient.invalidateQueries({ queryKey: ['reports'] });
+            queryClient.invalidateQueries({ queryKey: ['sales'] });
         }
     });
 };

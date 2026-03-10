@@ -9,6 +9,7 @@ import { StockTakeView } from '@/components/inventory/StockTakeView';
 import { ReportsView } from '@/components/inventory/ReportsView';
 import { PricingView } from '@/components/inventory/PricingView';
 import { TeamView } from '@/components/inventory/TeamView';
+import { MySalesView } from '@/components/inventory/MySalesView';
 import { useAuth } from '@/context/AuthContext';
 import { useProducts, useCreateSale, useAdjustStock, useUpdatePricing } from '@/hooks/useInventory';
 
@@ -46,7 +47,7 @@ export default function Index() {
     handleProductClick(randomProduct);
   }, [products, handleProductClick]);
 
-  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType) => {
+  const handleStockAdjust = useCallback((delta: number, reason: string, notes: string, paymentType?: PaymentType, bnplDueDate?: Date, attributedToUserId?: number | null) => {
     if (!selectedProduct) return;
 
     const isSale = reason === 'Sale';
@@ -61,9 +62,10 @@ export default function Index() {
         amountPaid: Number(selectedProduct.sellPrice) * Math.abs(delta),
         paymentMode: (paymentType || 'CASH').toUpperCase(),
         notes,
+        attributedToUserId: attributedToUserId ?? null,
       }, {
         onSuccess: () => {
-          toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : '💳 Card/Mpesa'}`);
+          toast.success(`Sale recorded: ${paymentType === 'cash' ? '💵 Cash' : paymentType === 'bnpl' ? '📅 BNPL' : '💵 Cash'}`);
           setIsSheetOpen(false);
         },
         onError: (err: any) => toast.error(err.message)
@@ -146,6 +148,7 @@ export default function Index() {
         {activeView === 'pricing' && isAdmin && <PricingView />}
 
         {activeView === 'team' && isAdmin && <TeamView />}
+        {activeView === 'team' && isAgent && <MySalesView />}
       </main>
 
       <ProductSheet
