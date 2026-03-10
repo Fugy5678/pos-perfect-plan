@@ -27,10 +27,10 @@ export const useAdjustStock = () => {
 export const useUpdatePricing = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, sellPrice, costPrice, name, category, qty, reorder }: any) =>
+        mutationFn: ({ id, sellPrice, costPrice, name, category, qty, reorder, imageUrl }: any) =>
             fetchWithAuth(`/products/${id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ name, category, qty, reorder, sellPrice, costPrice })
+                body: JSON.stringify({ name, category, qty, reorder, sellPrice, costPrice, imageUrl })
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });

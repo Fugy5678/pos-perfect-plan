@@ -19,13 +19,13 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 // POST /api/products  (Admin/Super Admin only)
 router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
-    const { name, sku, category, qty, reorder, sellPrice, costPrice } = req.body;
+    const { name, sku, category, qty, reorder, sellPrice, costPrice, imageUrl } = req.body;
     if (!name || !sku || !category || sellPrice == null || costPrice == null) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
     try {
         const product = await prisma.product.create({
-            data: { name, sku, category, qty: qty ?? 0, reorder: reorder ?? 5, sellPrice, costPrice },
+            data: { name, sku, category, qty: qty ?? 0, reorder: reorder ?? 5, sellPrice, costPrice, imageUrl },
         });
         return res.status(201).json(product);
     } catch (err: any) {
@@ -37,11 +37,11 @@ router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (r
 // PUT /api/products/:id
 router.put('/:id', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, category, qty, reorder, sellPrice, costPrice } = req.body;
+    const { name, category, qty, reorder, sellPrice, costPrice, imageUrl } = req.body;
     try {
         const product = await prisma.product.update({
             where: { id: Number(id) },
-            data: { name, category, qty, reorder, sellPrice, costPrice },
+            data: { name, category, qty, reorder, sellPrice, costPrice, imageUrl },
         });
         return res.json(product);
     } catch {

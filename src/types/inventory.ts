@@ -7,6 +7,7 @@ export interface Product {
   reorder: number;
   sellPrice: number;
   costPrice: number;
+  imageUrl?: string | null;
 }
 
 export type PaymentType = 'cash' | 'bnpl';

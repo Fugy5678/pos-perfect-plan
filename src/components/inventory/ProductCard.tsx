@@ -15,8 +15,17 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       onClick={onClick}
       className="bg-card border border-border rounded-2xl shadow-sm p-3 cursor-pointer flex flex-col gap-2 min-h-[142px] hover:shadow-md transition-shadow"
     >
-      <div className="h-[54px] rounded-[14px] bg-gradient-to-br from-primary/15 to-foreground/10" />
-      
+      {product.imageUrl ? (
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          className="h-[80px] w-full rounded-[14px] object-cover bg-muted"
+          loading="lazy"
+        />
+      ) : (
+        <div className="h-[54px] rounded-[14px] bg-gradient-to-br from-primary/15 to-foreground/10" />
+      )}
+
       <div className="flex justify-between gap-2.5 items-start">
         <div>
           <div className="font-bold text-[13px] leading-tight">{product.name}</div>
