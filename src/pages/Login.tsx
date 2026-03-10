@@ -11,12 +11,19 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingSeconds, setLoadingSeconds] = useState(0);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setLoadingSeconds(0);
+
+        // Show "warming up" message if server takes > 5s (Render free tier cold start)
+        const timer = setInterval(() => {
+            setLoadingSeconds((s) => s + 1);
+        }, 1000);
 
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
@@ -34,15 +41,20 @@ export default function Login() {
         } catch (err: any) {
             toast.error(err.message || 'Connecting to server failed');
         } finally {
+            clearInterval(timer);
             setIsLoading(false);
+            setLoadingSeconds(0);
         }
     };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
             <Card className="w-full max-w-md shadow-xl border-border/50">
-                <CardHeader className="space-y-2 text-center">
-                    <CardTitle className="text-3xl font-bold tracking-tight">POS System</CardTitle>
+                <CardHeader className="space-y-3 text-center pb-2">
+                    <div className="flex justify-center">
+                        <img src="/logo.png" alt="Perfect Plan POS" className="h-16 w-auto object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                    </div>
+                    <CardTitle className="text-2xl font-bold tracking-tight">Perfect Plan POS</CardTitle>
                     <CardDescription>Enter your credentials to access the terminal</CardDescription>
                 </CardHeader>
                 <form onSubmit={handleLogin}>
@@ -55,6 +67,7 @@ export default function Login() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 className="h-12"
+                                autoComplete="email"
                             />
                         </div>
                         <div className="space-y-2">
@@ -65,8 +78,14 @@ export default function Login() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 className="h-12"
+                                autoComplete="current-password"
                             />
                         </div>
+                        {isLoading && loadingSeconds >= 5 && (
+                            <p className="text-xs text-muted-foreground text-center animate-pulse">
+                                ⏳ Server is waking up, please wait... ({loadingSeconds}s)
+                            </p>
+                        )}
                     </CardContent>
                     <CardFooter>
                         <Button
@@ -74,7 +93,7 @@ export default function Login() {
                             className="w-full h-12 text-md font-medium"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Signing In...' : 'Sign In'}
+                            {isLoading ? (loadingSeconds > 0 ? `Signing In... (${loadingSeconds}s)` : 'Signing In...') : 'Sign In'}
                         </Button>
                     </CardFooter>
                 </form>
