@@ -61,13 +61,13 @@ export default function Login() {
                     <CardContent className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Input
-                                type="email"
-                                placeholder="Email Address"
+                                type="text"
+                                placeholder="Email or Username"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 className="h-12"
-                                autoComplete="email"
+                                autoComplete="username"
                             />
                         </div>
                         <div className="space-y-2">

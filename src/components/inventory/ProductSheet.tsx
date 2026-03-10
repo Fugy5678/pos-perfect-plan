@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Product, AuditEntry, ADJUSTMENT_REASONS, PaymentType } from '@/types/inventory';
 import { formatDateTime } from '@/lib/formatters';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithAuth } from '@/lib/api';
 
 interface ProductSheetProps {
   product: Product | null;
@@ -21,6 +23,9 @@ export function ProductSheet({
   onPricingSave,
   auditEntries,
 }: ProductSheetProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+
   const [sellPrice, setSellPrice] = useState(0);
   const [costPrice, setCostPrice] = useState(0);
   const [adjustQty, setAdjustQty] = useState(1);
@@ -28,6 +33,17 @@ export function ProductSheet({
   const [notes, setNotes] = useState('');
   const [paymentType, setPaymentType] = useState<PaymentType>('cash');
   const [bnplDueDate, setBnplDueDate] = useState<string>('');
+  const [attributedAgentId, setAttributedAgentId] = useState<string>('');
+  const [agents, setAgents] = useState<{ id: number; name: string }[]>([]);
+
+  // Fetch agents list for admin attribution dropdown
+  useEffect(() => {
+    if (isAdmin) {
+      fetchWithAuth('/users?role=AGENT')
+        .then((data: any) => setAgents(data.users || data || []))
+        .catch(() => setAgents([]));
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     if (product) {
@@ -37,6 +53,7 @@ export function ProductSheet({
       setNotes('');
       setPaymentType('cash');
       setBnplDueDate('');
+      setAttributedAgentId('');
     }
   }, [product]);
 
@@ -51,7 +68,10 @@ export function ProductSheet({
   const handleSale = () => {
     if (adjustQty > 0) {
       const dueDate = paymentType === 'bnpl' && bnplDueDate ? new Date(bnplDueDate) : undefined;
-      onStockAdjust(-adjustQty, 'Sale', notes, paymentType, dueDate);
+      const agentNote = attributedAgentId
+        ? `[Agent:${agents.find((a) => String(a.id) === attributedAgentId)?.name || attributedAgentId}] ${notes}`.trim()
+        : notes;
+      onStockAdjust(-adjustQty, 'Sale', agentNote, paymentType, dueDate);
     }
   };
 
@@ -78,7 +98,7 @@ export function ProductSheet({
             className="fixed left-0 right-0 bottom-[66px] z-40 bg-card border-t border-border rounded-t-[18px] shadow-lg max-w-[1200px] mx-auto md:left-auto md:right-5 md:w-[360px] md:rounded-[18px] md:border"
           >
             <div className="w-[46px] h-[5px] rounded-full bg-muted mx-auto mt-2 md:hidden" />
-            
+
             <div className="px-3 py-2.5 flex items-center justify-between border-b border-border">
               <div>
                 <strong className="block text-sm font-bold">{product?.name || 'Select a product'}</strong>
@@ -172,27 +192,42 @@ export function ProductSheet({
                 </div>
               </div>
 
+              {/* Agent Attribution — only visible to admin/super admin */}
+              {isAdmin && (
+                <div className="border border-border rounded-[14px] p-2.5 bg-card">
+                  <label className="block text-[11px] text-muted-foreground mb-1.5">👤 Attribute Sale To Agent</label>
+                  <select
+                    value={attributedAgentId}
+                    onChange={(e) => setAttributedAgentId(e.target.value)}
+                    className="w-full border-none outline-none text-sm bg-transparent"
+                  >
+                    <option value="">— Self / No attribution —</option>
+                    {agents.map((a) => (
+                      <option key={a.id} value={String(a.id)}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Payment Type for Sales */}
               <div className="border border-border rounded-[14px] p-2.5 bg-card">
                 <label className="block text-[11px] text-muted-foreground mb-1.5">Payment Type (for Sales)</label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPaymentType('cash')}
-                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                      paymentType === 'cash'
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${paymentType === 'cash'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
-                    }`}
+                      }`}
                   >
                     💵 Cash
                   </button>
                   <button
                     onClick={() => setPaymentType('bnpl')}
-                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                      paymentType === 'bnpl'
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${paymentType === 'bnpl'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
-                    }`}
+                      }`}
                   >
                     📅 Buy Now Pay Later
                   </button>
@@ -277,9 +312,7 @@ export function ProductSheet({
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Shared login works for all floor agents. If you want accountability later, add a 4-digit PIN per agent while keeping one shared login.
-              </p>
+
             </div>
           </motion.aside>
         </>

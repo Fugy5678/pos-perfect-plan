@@ -8,7 +8,9 @@ const router = Router();
 // GET /api/users  (Admin/Super Admin only)
 router.get('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     try {
+        const { role } = req.query;
         const users = await prisma.user.findMany({
+            where: role ? { role: String(role) as any } : undefined,
             select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
             orderBy: { createdAt: 'asc' },
         });

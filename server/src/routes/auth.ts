@@ -7,14 +7,24 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme_in_production';
 
 // POST /api/auth/login
+// Accepts login by email (super admin) OR by name/username (admins/agents)
 router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password required' });
+        return res.status(400).json({ error: 'Username/email and password required' });
     }
 
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        // Try to find user by email first, then by name (case-insensitive)
+        let user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: { equals: email, mode: 'insensitive' } },
+                    { name: { equals: email, mode: 'insensitive' } },
+                ],
+            },
+        });
+
         if (!user || !user.isActive) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
