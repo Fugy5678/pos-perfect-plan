@@ -63,7 +63,7 @@ router.get('/summary', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/reports/sales-by-date?from=&to=
-router.get('/sales-by-date', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req: Request, res: Response) => {
+router.get('/sales-by-date', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const from = req.query.from ? new Date(req.query.from as string) : new Date(Date.now() - 7 * 86400000);
     const to = req.query.to ? new Date(req.query.to as string) : new Date();
 

@@ -5,8 +5,8 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
-// GET /api/users  (Admin only)
-router.get('/', authMiddleware, requireRole(['ADMIN']), async (req: Request, res: Response) => {
+// GET /api/users  (Admin/Super Admin only)
+router.get('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany({
             select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
@@ -18,16 +18,25 @@ router.get('/', authMiddleware, requireRole(['ADMIN']), async (req: Request, res
     }
 });
 
-// POST /api/users  (Admin only)
-router.post('/', authMiddleware, requireRole(['ADMIN']), async (req: Request, res: Response) => {
+// POST /api/users  (Admin/Super Admin only)
+router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { name, email, password, role } = req.body;
+    const requestUser = (req as any).user;
+
     if (!name || !email || !password) {
         return res.status(400).json({ error: 'Name, email and password required' });
     }
+
+    // Role hierarchy check
+    const targetRole = role || 'AGENT';
+    if (requestUser.role === 'ADMIN' && targetRole !== 'AGENT') {
+        return res.status(403).json({ error: 'Admins can only create AGENT accounts' });
+    }
+
     try {
         const hashed = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { name, email, password: hashed, role: role || 'CASHIER' },
+            data: { name, email, password: hashed, role: targetRole },
             select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
         });
         return res.status(201).json(user);
@@ -37,10 +46,17 @@ router.post('/', authMiddleware, requireRole(['ADMIN']), async (req: Request, re
     }
 });
 
-// PUT /api/users/:id  (Admin only)
-router.put('/:id', authMiddleware, requireRole(['ADMIN']), async (req: Request, res: Response) => {
+// PUT /api/users/:id  (Admin/Super Admin only)
+router.put('/:id', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, role, isActive, password } = req.body;
+    const requestUser = (req as any).user;
+
+    // Hierarchy check: Admins cannot promote to ADMIN or SUPER_ADMIN
+    if (role && requestUser.role === 'ADMIN' && role !== 'AGENT') {
+        return res.status(403).json({ error: 'Admins can only set role to AGENT' });
+    }
+
     try {
         const data: any = { name, role, isActive };
         if (password) data.password = await bcrypt.hash(password, 10);

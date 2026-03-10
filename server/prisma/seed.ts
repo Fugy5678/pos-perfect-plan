@@ -6,19 +6,32 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Seeding database...');
 
-    // Create admin user
-    const adminPass = await bcrypt.hash('admin123', 10);
-    const admin = await prisma.user.upsert({
-        where: { email: 'admin@pos.com' },
+    // Create Super Admin user
+    const superAdminPass = await bcrypt.hash('superadmin123', 10);
+    const superAdmin = await prisma.user.upsert({
+        where: { email: 'fujimoryc@gmail.com' },
         update: {},
         create: {
-            name: 'Admin',
-            email: 'admin@pos.com',
-            password: adminPass,
-            role: 'ADMIN',
+            name: 'Fujimory',
+            email: 'fujimoryc@gmail.com',
+            password: superAdminPass,
+            role: 'SUPER_ADMIN',
         },
     });
-    console.log(`✅ Admin user: ${admin.email}`);
+    console.log(`✅ Super Admin user: ${superAdmin.email}`);
+
+    // Create Admin users
+    const adminNames = ['Millow', 'Denno', 'Waweru', 'Njoro'];
+    for (const name of adminNames) {
+        const email = `${name.toLowerCase()}@perfectplan.com`;
+        const pass = await bcrypt.hash('admin123', 10);
+        await prisma.user.upsert({
+            where: { email },
+            update: {},
+            create: { name, email, password: pass, role: 'ADMIN' },
+        });
+        console.log(`✅ Admin user: ${email}`);
+    }
 
     // Seed products from original data
     const products = [

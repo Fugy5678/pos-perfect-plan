@@ -89,9 +89,13 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     const limit = Number(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
+    const user = (req as any).user;
+    const whereCondition = user.role === 'AGENT' ? { userId: user.id } : {};
+
     try {
         const [sales, total] = await Promise.all([
             prisma.sale.findMany({
+                where: whereCondition,
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
@@ -100,7 +104,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
                     items: { include: { product: { select: { name: true, sku: true } } } },
                 },
             }),
-            prisma.sale.count(),
+            prisma.sale.count({ where: whereCondition }),
         ]);
 
         return res.json({ sales, total, page, pages: Math.ceil(total / limit) });

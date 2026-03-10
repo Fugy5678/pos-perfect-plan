@@ -35,12 +35,13 @@ export function Header({
     <header className="sticky top-0 z-30 bg-card border-b border-border px-3 py-3 md:px-5">
       <div className="flex gap-2.5 items-center justify-between mb-2.5">
         <div className="flex items-center gap-2.5 min-w-[140px]">
-          <div 
-            className="w-[34px] h-[34px] rounded-[10px] bg-gradient-to-br from-foreground to-primary shadow-lg"
-            aria-hidden="true"
+          <img
+            src="/logo.png"
+            alt="Perfect Plan POS Logo"
+            className="w-[34px] h-[34px] object-contain"
           />
           <div className="leading-tight">
-            <strong className="block text-sm font-bold">Millow Closset POS</strong>
+            <strong className="block text-sm font-bold">Perfect Plan POS</strong>
           </div>
         </div>
         <div className="text-xs text-muted-foreground border border-border py-1.5 px-2.5 rounded-full bg-card whitespace-nowrap">

@@ -17,8 +17,8 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/products  (Admin/Manager only)
-router.post('/', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req: Request, res: Response) => {
+// POST /api/products  (Admin/Super Admin only)
+router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { name, sku, category, qty, reorder, sellPrice, costPrice } = req.body;
     if (!name || !sku || !category || sellPrice == null || costPrice == null) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -35,7 +35,7 @@ router.post('/', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req: 
 });
 
 // PUT /api/products/:id
-router.put('/:id', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, category, qty, reorder, sellPrice, costPrice } = req.body;
     try {
@@ -50,7 +50,7 @@ router.put('/:id', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req
 });
 
 // PATCH /api/products/:id/stock  – adjust stock quantity
-router.patch('/:id/stock', authMiddleware, requireRole(['ADMIN', 'MANAGER']), async (req: Request, res: Response) => {
+router.patch('/:id/stock', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { id } = req.params;
     const { qty, type, reason } = req.body; // qty = absolute new qty, type = PURCHASE|ADJUSTMENT|RETURN
     try {
@@ -82,7 +82,7 @@ router.patch('/:id/stock', authMiddleware, requireRole(['ADMIN', 'MANAGER']), as
 });
 
 // DELETE /api/products/:id (soft delete)
-router.delete('/:id', authMiddleware, requireRole(['ADMIN']), async (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         await prisma.product.update({ where: { id: Number(id) }, data: { isActive: false } });
