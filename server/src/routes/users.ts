@@ -12,8 +12,13 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
         const requestUser = (req as any).user;
 
         // Agents are only allowed to fetch list of Admins/Super Admins for attribution
-        if (requestUser.role === 'AGENT' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-            return res.status(403).json({ error: 'Agents can only fetch admin lists' });
+        if (requestUser.role === 'AGENT') {
+            const users = await prisma.user.findMany({
+                where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+                select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+                orderBy: { createdAt: 'asc' },
+            });
+            return res.json(users);
         }
 
         const users = await prisma.user.findMany({

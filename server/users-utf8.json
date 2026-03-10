@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "Admin",
+    "email": "admin@pos.com",
+    "password": "$2b$10$FF2taSfDJOVfLxifX6lb2eZpSq0cFkxBlCV/WDLowhYoNKXnn70My",
+    "role": "ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-09T16:19:12.306Z",
+    "updatedAt": "2026-03-09T16:19:12.306Z"
+  },
+  {
+    "id": 2,
+    "name": "Fujimory",
+    "email": "fujimoryc@gmail.com",
+    "password": "$2b$10$4fWkAIoW7tsfaUGu9zPoEeLtGDiZ7k8GDqYJoIOYHzP1lK6Rcm7jK",
+    "role": "SUPER_ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-10T05:42:11.120Z",
+    "updatedAt": "2026-03-10T05:42:11.120Z"
+  },
+  {
+    "id": 3,
+    "name": "Millow",
+    "email": "millow@perfectplan.com",
+    "password": "$2b$10$Byb8V2t7iSmXwgjr.CcdDuPHxF8k.7yOCGMLAXe8MQoOp3Lbamxhi",
+    "role": "ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-10T05:42:11.869Z",
+    "updatedAt": "2026-03-10T05:42:11.869Z"
+  },
+  {
+    "id": 4,
+    "name": "Denno",
+    "email": "denno@perfectplan.com",
+    "password": "$2b$10$ifppJN5Rc2k4VMRMKjo9R.5ylG4pCPq/WHl.NvQsuIIc0U8rOIa8q",
+    "role": "ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-10T05:42:12.361Z",
+    "updatedAt": "2026-03-10T05:42:12.361Z"
+  },
+  {
+    "id": 5,
+    "name": "Waweru",
+    "email": "waweru@perfectplan.com",
+    "password": "$2b$10$khc95MUQ2L53sL4jZwmtK.YgLfXmMobWEbsm0csWctssdhKXrOCca",
+    "role": "ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-10T05:42:12.847Z",
+    "updatedAt": "2026-03-10T05:42:12.847Z"
+  },
+  {
+    "id": 6,
+    "name": "Njoro",
+    "email": "njoro@perfectplan.com",
+    "password": "$2b$10$fy5vS3qkAQm.PlmoWihvJ.lfGVIGkgCOpqt2dLoqhsjp3blHH/O1i",
+    "role": "ADMIN",
+    "isActive": true,
+    "createdAt": "2026-03-10T05:42:13.333Z",
+    "updatedAt": "2026-03-10T05:42:13.333Z"
+  },
+  {
+    "id": 7,
+    "name": "Mtest",
+    "email": "mtest@jvnpos.local",
+    "password": "$2b$10$FhwSh31eWaMEabxBnFuOre7lSytYIr9.AmIN70uiaDVcx7Srar/ty",
+    "role": "AGENT",
+    "isActive": true,
+    "createdAt": "2026-03-10T08:50:24.193Z",
+    "updatedAt": "2026-03-10T08:50:24.193Z"
+  }
+]
