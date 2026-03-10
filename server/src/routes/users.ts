@@ -25,8 +25,8 @@ router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (r
     const { name, email, password, role } = req.body;
     const requestUser = (req as any).user;
 
-    if (!name || !email || !password) {
-        return res.status(400).json({ error: 'Name, email and password required' });
+    if (!name || !password) {
+        return res.status(400).json({ error: 'Name and password required' });
     }
 
     // Role hierarchy check
@@ -35,15 +35,18 @@ router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (r
         return res.status(403).json({ error: 'Admins can only create AGENT accounts' });
     }
 
+    // Auto-generate an internal email if not provided (agents log in by name)
+    const resolvedEmail = email || `${name.toLowerCase().replace(/\s+/g, '')}@jvnpos.local`;
+
     try {
         const hashed = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { name, email, password: hashed, role: targetRole },
+            data: { name, email: resolvedEmail, password: hashed, role: targetRole },
             select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
         });
         return res.status(201).json(user);
     } catch (err: any) {
-        if (err.code === 'P2002') return res.status(409).json({ error: 'Email already registered' });
+        if (err.code === 'P2002') return res.status(409).json({ error: 'A user with that name or email already exists' });
         return res.status(500).json({ error: 'Failed to create user' });
     }
 });

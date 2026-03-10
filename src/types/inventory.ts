@@ -32,7 +32,7 @@ export type StockStatus = 'ok' | 'low' | 'out';
 
 export type FilterType = 'ALL' | 'LOW' | 'OUT' | 'FOOTWEAR' | 'CLOTHING' | 'ACCESSORIES' | 'HOME';
 
-export type ViewType = 'products' | 'stocktake' | 'reports' | 'pricing';
+export type ViewType = 'products' | 'stocktake' | 'reports' | 'pricing' | 'team';
 
 export const ADJUSTMENT_REASONS = [
   'Supplier Delivery',

@@ -8,12 +8,15 @@ import { BottomNav } from '@/components/inventory/BottomNav';
 import { StockTakeView } from '@/components/inventory/StockTakeView';
 import { ReportsView } from '@/components/inventory/ReportsView';
 import { PricingView } from '@/components/inventory/PricingView';
+import { TeamView } from '@/components/inventory/TeamView';
 import { useAuth } from '@/context/AuthContext';
 import { useProducts, useCreateSale, useAdjustStock, useUpdatePricing } from '@/hooks/useInventory';
 
 
 export default function Index() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const isAgent = user?.role === 'AGENT';
   const { data: products = [], isLoading } = useProducts();
   const { mutate: createSale } = useCreateSale();
   const { mutate: adjustStock } = useAdjustStock();
@@ -134,13 +137,15 @@ export default function Index() {
           />
         )}
 
-        {activeView === 'stocktake' && (
+        {activeView === 'stocktake' && isAdmin && (
           <StockTakeView products={products} onProductClick={handleProductClick} />
         )}
 
-        {activeView === 'reports' && <ReportsView auditLog={[]} />}
+        {activeView === 'reports' && isAdmin && <ReportsView auditLog={[]} />}
 
-        {activeView === 'pricing' && <PricingView />}
+        {activeView === 'pricing' && isAdmin && <PricingView />}
+
+        {activeView === 'team' && isAdmin && <TeamView />}
       </main>
 
       <ProductSheet

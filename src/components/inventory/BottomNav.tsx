@@ -1,24 +1,33 @@
-import { ClipboardList, Package, BarChart3, Tag } from 'lucide-react';
+import { ClipboardList, Package, BarChart3, Tag, Users } from 'lucide-react';
 import { ViewType } from '@/types/inventory';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 interface BottomNavProps {
   activeView: ViewType;
   onViewChange: (view: ViewType) => void;
 }
 
-const NAV_ITEMS: { view: ViewType; label: string; icon: typeof ClipboardList }[] = [
-  { view: 'products', label: 'Products', icon: ClipboardList },
-  { view: 'stocktake', label: 'Stock Take', icon: Package },
-  { view: 'reports', label: 'Reports', icon: BarChart3 },
-  { view: 'pricing', label: 'Pricing', icon: Tag },
-];
-
 export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const isAgent = user?.role === 'AGENT';
+
+  // Agents only see Products (sales). Admins see everything.
+  const navItems = isAgent
+    ? [{ view: 'products' as ViewType, label: 'My Sales', icon: ClipboardList }]
+    : [
+      { view: 'products' as ViewType, label: 'Products', icon: ClipboardList },
+      { view: 'stocktake' as ViewType, label: 'Stock Take', icon: Package },
+      { view: 'reports' as ViewType, label: 'Reports', icon: BarChart3 },
+      { view: 'pricing' as ViewType, label: 'Pricing', icon: Tag },
+      { view: 'team' as ViewType, label: 'Team', icon: Users },
+    ];
+
   return (
     <nav className="fixed left-0 right-0 bottom-0 z-50 bg-card border-t border-border py-2.5 px-2">
       <div className="flex justify-around gap-2 max-w-[1200px] mx-auto">
-        {NAV_ITEMS.map(({ view, label, icon: Icon }) => (
+        {navItems.map(({ view, label, icon: Icon }) => (
           <button
             key={view}
             onClick={() => onViewChange(view)}
