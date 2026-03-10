@@ -5,10 +5,17 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
-// GET /api/users  (Admin/Super Admin only)
-router.get('/', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
+// GET /api/users
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { role } = req.query;
+        const requestUser = (req as any).user;
+
+        // Agents are only allowed to fetch list of Admins/Super Admins for attribution
+        if (requestUser.role === 'AGENT' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ error: 'Agents can only fetch admin lists' });
+        }
+
         const users = await prisma.user.findMany({
             where: role ? { role: String(role) as any } : undefined,
             select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
