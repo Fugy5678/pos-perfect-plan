@@ -1,6 +1,7 @@
-import { Search, Settings2, Camera } from 'lucide-react';
+import { Search, Settings2, Camera, LogOut } from 'lucide-react';
 import { FilterType } from '@/types/inventory';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 const FILTERS: { value: FilterType; label: string }[] = [
   { value: 'ALL', label: 'All' },
@@ -31,24 +32,42 @@ export function Header({
   onToggleFilters,
   onScan,
 }: HeaderProps) {
+  const { user, logout } = useAuth();
+
   return (
     <header className="sticky top-0 z-30 bg-card border-b border-border px-3 py-3 md:px-5">
-      <div className="flex gap-2.5 items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2.5 min-w-[140px]">
+      {/* Top row: Logo | User info + Sign Out */}
+      <div className="flex items-center justify-between mb-2.5">
+        {/* Left: Logo + Name */}
+        <div className="flex items-center gap-2">
           <img
             src="/logo.png"
-            alt="Perfect Plan POS Logo"
-            className="w-[34px] h-[34px] object-contain"
+            alt="Perfect Plan POS"
+            className="w-8 h-8 object-contain rounded"
+            onError={(e) => (e.currentTarget.style.display = 'none')}
           />
-          <div className="leading-tight">
-            <strong className="block text-sm font-bold">Perfect Plan POS</strong>
-          </div>
+          <strong className="text-sm font-bold leading-tight">Perfect Plan POS</strong>
         </div>
-        <div className="text-xs text-muted-foreground border border-border py-1.5 px-2.5 rounded-full bg-card whitespace-nowrap">
-          Shared Login: FLOOR-AGENT
+
+        {/* Right: User role badge + Sign Out */}
+        <div className="flex items-center gap-2">
+          {user && (
+            <span className="text-xs text-muted-foreground border border-border py-1 px-2.5 rounded-full bg-muted whitespace-nowrap hidden sm:inline-flex">
+              {user.name} · {user.role.replace('_', ' ')}
+            </span>
+          )}
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-xs font-semibold text-destructive border border-destructive/30 bg-destructive/5 hover:bg-destructive hover:text-white px-3 py-1.5 rounded-full transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
       </div>
 
+      {/* Search + controls row */}
       <div className="flex gap-2.5 items-center">
         <div className="flex-1 flex gap-2 items-center bg-card border border-border rounded-xl px-3 py-2.5">
           <Search className="w-4 h-4 text-muted-foreground" />

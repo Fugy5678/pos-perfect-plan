@@ -10,10 +10,10 @@ import { ReportsView } from '@/components/inventory/ReportsView';
 import { PricingView } from '@/components/inventory/PricingView';
 import { useAuth } from '@/context/AuthContext';
 import { useProducts, useCreateSale, useAdjustStock, useUpdatePricing } from '@/hooks/useInventory';
-import { Button } from '@/components/ui/button';
+
 
 export default function Index() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { data: products = [], isLoading } = useProducts();
   const { mutate: createSale } = useCreateSale();
   const { mutate: adjustStock } = useAdjustStock();
@@ -123,9 +123,6 @@ export default function Index() {
         onScan={handleScan}
       />
 
-      <div className="absolute top-3 right-16 z-50">
-        <Button variant="destructive" size="sm" onClick={logout}>Sign Out</Button>
-      </div>
 
       <main className="p-3 pb-[86px] max-w-[1200px] mx-auto md:p-5 md:pb-[86px]">
         {activeView === 'products' && (
