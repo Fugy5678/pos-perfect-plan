@@ -60,9 +60,17 @@ export const useCreateSale = () => {
     });
 };
 
-export const useReportsStatus = () => {
+export const useReportsStatus = (filters?: { from?: string; to?: string; agentId?: string; attributedTo?: string }) => {
     return useQuery({
-        queryKey: ['reports'],
-        queryFn: () => fetchWithAuth('/reports/summary'),
+        queryKey: ['reports', filters],
+        queryFn: () => {
+            const params = new URLSearchParams();
+            if (filters?.from) params.append('from', filters.from);
+            if (filters?.to) params.append('to', filters.to);
+            if (filters?.agentId) params.append('agentId', filters.agentId);
+            if (filters?.attributedTo) params.append('attributedTo', filters.attributedTo);
+
+            return fetchWithAuth(`/reports/summary?${params.toString()}`);
+        },
     });
 };

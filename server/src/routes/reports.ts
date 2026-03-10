@@ -4,57 +4,61 @@ import { authMiddleware, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// GET /api/reports/summary  – dashboard summary
+// GET /api/reports/summary
 router.get('/summary', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const fromDate = req.query.from ? new Date(req.query.from as string) : new Date(new Date().setHours(0, 0, 0, 0));
+        const toDate = req.query.to ? new Date(req.query.to as string) : new Date();
+        const agentId = req.query.agentId ? Number(req.query.agentId) : undefined;
+        const attributedTo = req.query.attributedTo as string;
 
-        const [totalSalesToday, totalRevenueToday, lowStockProducts, topProducts, recentSales] =
-            await Promise.all([
-                prisma.sale.count({ where: { createdAt: { gte: today }, status: 'COMPLETED' } }),
-                prisma.sale.aggregate({
-                    where: { createdAt: { gte: today }, status: 'COMPLETED' },
-                    _sum: { total: true },
-                }),
-                prisma.product.findMany({
-                    where: { isActive: true, qty: { lte: prisma.product.fields.reorder } },
-                    orderBy: { qty: 'asc' },
-                    take: 10,
-                }),
-                prisma.saleItem.groupBy({
-                    by: ['productId'],
-                    _sum: { qty: true, total: true },
-                    orderBy: { _sum: { total: 'desc' } },
-                    take: 5,
-                }),
-                prisma.sale.findMany({
-                    take: 5,
-                    orderBy: { createdAt: 'desc' },
-                    include: { user: { select: { name: true } } },
-                }),
-            ]);
+        const whereCondition: any = {
+            createdAt: { gte: fromDate, lte: toDate },
+            status: 'COMPLETED'
+        };
 
-        // Get product details for top products
-        const topProductIds = topProducts.map((p) => p.productId);
-        const topProductDetails = await prisma.product.findMany({
-            where: { id: { in: topProductIds } },
-            select: { id: true, name: true, sku: true },
+        if (agentId) whereCondition.userId = agentId;
+        if (attributedTo) whereCondition.notes = { startsWith: `[${attributedTo}]` };
+
+        // Fetch sales with items to calculate total cost and net profit
+        const filteredSales = await prisma.sale.findMany({
+            where: whereCondition,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: { select: { name: true } },
+                items: { include: { product: { select: { costPrice: true } } } }
+            }
         });
 
-        const topProductsWithNames = topProducts.map((p) => ({
-            ...p,
-            product: topProductDetails.find((d) => d.id === p.productId),
-        }));
+        let totalRevenue = 0;
+        let totalCost = 0;
+        const totalSalesCount = filteredSales.length;
+
+        filteredSales.forEach(sale => {
+            totalRevenue += Number(sale.total);
+            sale.items.forEach(item => {
+                totalCost += Number(item.product?.costPrice || 0) * item.qty;
+            });
+        });
+
+        const netProfit = totalRevenue - totalCost;
+
+        // Fetch low stock products (global, not filtered)
+        const lowStockProducts = await prisma.product.findMany({
+            where: { isActive: true, qty: { lte: prisma.product.fields.reorder } },
+            orderBy: { qty: 'asc' },
+            take: 10,
+        });
 
         return res.json({
-            today: {
-                sales: totalSalesToday,
-                revenue: totalRevenueToday._sum.total ?? 0,
+            summary: {
+                sales: totalSalesCount,
+                revenue: totalRevenue,
+                cost: totalCost,
+                profit: netProfit,
             },
+            recentSales: filteredSales.slice(0, 50), // Send up to 50 matching sales for the table
             lowStock: lowStockProducts,
-            topProducts: topProductsWithNames,
-            recentSales,
         });
     } catch (err) {
         console.error(err);
@@ -62,7 +66,7 @@ router.get('/summary', authMiddleware, async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/reports/sales-by-date?from=&to=
+// GET /api/reports/sales-by-date
 router.get('/sales-by-date', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     const from = req.query.from ? new Date(req.query.from as string) : new Date(Date.now() - 7 * 86400000);
     const to = req.query.to ? new Date(req.query.to as string) : new Date();
@@ -74,7 +78,6 @@ router.get('/sales-by-date', authMiddleware, requireRole(['SUPER_ADMIN', 'ADMIN'
             orderBy: { createdAt: 'asc' },
         });
 
-        // Group by date
         const grouped: Record<string, { date: string; revenue: number; sales: number }> = {};
         for (const s of sales) {
             const date = s.createdAt.toISOString().split('T')[0];
@@ -97,14 +100,8 @@ router.get('/stock', authMiddleware, async (req: Request, res: Response) => {
             orderBy: [{ category: 'asc' }, { qty: 'asc' }],
         });
 
-        const totalInventoryValue = products.reduce(
-            (sum, p) => sum + Number(p.costPrice) * p.qty,
-            0
-        );
-        const totalRetailValue = products.reduce(
-            (sum, p) => sum + Number(p.sellPrice) * p.qty,
-            0
-        );
+        const totalInventoryValue = products.reduce((sum, p) => sum + Number(p.costPrice) * p.qty, 0);
+        const totalRetailValue = products.reduce((sum, p) => sum + Number(p.sellPrice) * p.qty, 0);
         const lowStock = products.filter((p) => p.qty <= p.reorder);
         const outOfStock = products.filter((p) => p.qty === 0);
 

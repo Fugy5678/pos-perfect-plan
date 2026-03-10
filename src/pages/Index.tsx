@@ -143,7 +143,7 @@ export default function Index() {
           <StockTakeView products={products} onProductClick={handleProductClick} />
         )}
 
-        {activeView === 'reports' && isAdmin && <ReportsView auditLog={[]} />}
+        {activeView === 'reports' && isAdmin && <ReportsView />}
 
         {activeView === 'pricing' && isAdmin && <PricingView />}
 
