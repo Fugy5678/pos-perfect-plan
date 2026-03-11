@@ -39,10 +39,25 @@ export function ProductSheet({
 
   // Agents fetch admins to attribute to; Admins fetch agents to attribute to
   useEffect(() => {
-    const roleToFetch = isAgent ? 'ADMIN' : 'AGENT';
-    fetchWithAuth(`/users?role=${roleToFetch}`)
-      .then((data: any) => setAttributionList(Array.isArray(data) ? data : data.users || []))
-      .catch(() => setAttributionList([]));
+    if (isAgent) {
+      // Agents get ALL admins/super-admins from /users (backend returns them automatically)
+      fetchWithAuth('/users')
+        .then((data: any) => {
+          const all = Array.isArray(data) ? data : data.users || [];
+          // Filter out system/placeholder accounts: only show real named admins
+          const realAdmins = all.filter((u: any) =>
+            (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN') &&
+            !['admin', 'fujimory'].includes(u.name.toLowerCase())
+          );
+          setAttributionList(realAdmins);
+        })
+        .catch(() => setAttributionList([]));
+    } else {
+      // Admins fetch agents
+      fetchWithAuth('/users?role=AGENT')
+        .then((data: any) => setAttributionList(Array.isArray(data) ? data : data.users || []))
+        .catch(() => setAttributionList([]));
+    }
   }, [isAgent]);
 
   useEffect(() => {
@@ -67,6 +82,11 @@ export function ProductSheet({
 
   const handleSale = () => {
     if (adjustQty > 0) {
+      // Attribution is mandatory for agents
+      if (isAgent && !attributedTo) {
+        import('sonner').then(({ toast }) => toast.error('Please select the Admin / Owner to attribute this sale to.'));
+        return;
+      }
       const dueDate = paymentType === 'bnpl' && bnplDueDate ? new Date(bnplDueDate) : undefined;
       onStockAdjust(
         -adjustQty,
@@ -192,23 +212,25 @@ export function ProductSheet({
                 </div>
               </div>
 
-              {/* Attribution dropdown — shown to EVERYONE making a sale
-                  Agents → select Admin (whose stock they're selling)
-                  Admins → select Agent (who made the sale) */}
-              <div className="border border-border rounded-[14px] p-2.5 bg-card">
+              {/* Attribution dropdown */}
+              <div className={`border rounded-[14px] p-2.5 bg-card ${isAgent && !attributedTo ? 'border-destructive/50' : 'border-border'}`}>
                 <label className="block text-[11px] text-muted-foreground mb-1.5">
                   {isAgent ? '🏷️ Sale Attributed To (Admin / Owner)' : '👤 Sale Made By (Agent)'}
+                  {isAgent && <span className="text-destructive font-bold ml-1">*</span>}
                 </label>
                 <select
                   value={attributedTo}
                   onChange={(e) => setAttributedTo(e.target.value)}
                   className="w-full border-none outline-none text-sm bg-transparent"
                 >
-                  <option value="">— {isAgent ? 'Select admin' : 'Select agent (optional)'} —</option>
+                  <option value="">— {isAgent ? 'Select admin (required)' : 'Select agent (optional)'} —</option>
                   {attributionList.map((u) => (
                     <option key={u.id} value={u.name}>{u.name}</option>
                   ))}
                 </select>
+                {isAgent && !attributedTo && (
+                  <p className="text-[10px] text-destructive mt-1">Required — choose who owns this stock</p>
+                )}
               </div>
 
               {/* Payment Type — BNPL only for admins */}

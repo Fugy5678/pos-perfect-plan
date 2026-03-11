@@ -98,6 +98,11 @@ export function TeamView() {
     };
 
     const handleResetPassword = async (u: TeamUser) => {
+        // Permission rules: Super Admin can reset anyone. Admin can only reset Agents and themselves.
+        if (currentUser?.role === 'ADMIN' && u.role === 'ADMIN') {
+            toast.error('Admins can only reset passwords for Agents or their own account.');
+            return;
+        }
         const newPw = prompt(`Set new password for ${u.name}:`);
         if (!newPw) return;
         try {
@@ -237,16 +242,19 @@ export function TeamView() {
                                                 <p className="text-[11px] text-muted-foreground truncate">{u.email.includes('@jvnpos.local') ? 'username login' : u.email}</p>
                                             </div>
                                         </div>
-                                        {/* Don't show actions for own account or super admin accounts */}
+                                        {/* Show actions based on role permissions */}
                                         {u.id !== currentUser?.id && u.role !== 'SUPER_ADMIN' && (
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <button
-                                                    onClick={() => handleResetPassword(u)}
-                                                    title="Reset password"
-                                                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                                                >
-                                                    <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
-                                                </button>
+                                                {/* Reset password: Admins can only reset Agents; Super Admins can reset anyone */}
+                                                {(isSuperAdmin || u.role === 'AGENT') && (
+                                                    <button
+                                                        onClick={() => handleResetPassword(u)}
+                                                        title="Reset password"
+                                                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                                    >
+                                                        <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleToggleActive(u)}
                                                     title={u.isActive ? 'Deactivate' : 'Activate'}
