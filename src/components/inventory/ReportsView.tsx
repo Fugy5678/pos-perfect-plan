@@ -26,7 +26,12 @@ export function ReportsView() {
     fetchWithAuth('/users').then((data: any) => {
       const users = Array.isArray(data) ? data : data.users || [];
       setAgents(users.filter((u: any) => u.role === 'AGENT'));
-      setAdmins(users.filter((u: any) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'));
+      setAdmins(users.filter((u: any) => {
+        const lowerName = (u.name || '').trim().toLowerCase();
+        return (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN') && 
+               lowerName !== 'fujimory' && 
+               lowerName !== 'admin';
+      }));
     }).catch(console.error);
   }, []);
 

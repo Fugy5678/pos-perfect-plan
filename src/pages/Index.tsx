@@ -18,7 +18,7 @@ export default function Index() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, isError, error } = useProducts();
   const { mutate: createSale } = useCreateSale();
   const { mutate: adjustStock } = useAdjustStock();
   const { mutate: updatePricing } = useUpdatePricing();
@@ -114,6 +114,23 @@ export default function Index() {
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading pos terminal...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-3 p-4 text-center">
+        <h3 className="font-bold text-xl text-destructive">Error loading POS data</h3>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          {error?.message || "There was a problem connecting to the server. It might be waking up."}
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition-all"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -41,7 +41,17 @@ export function ProductSheet({
   useEffect(() => {
     const roleToFetch = isAgent ? 'ADMIN' : 'AGENT';
     fetchWithAuth(`/users?role=${roleToFetch}`)
-      .then((data: any) => setAttributionList(Array.isArray(data) ? data : data.users || []))
+      .then((data: any) => {
+        let users = Array.isArray(data) ? data : data.users || [];
+        // Filter out specific admins from the dropdown
+        if (isAgent) {
+          users = users.filter((u: any) => {
+            const lowerName = (u.name || '').trim().toLowerCase();
+            return lowerName !== 'fujimory' && lowerName !== 'admin';
+          });
+        }
+        setAttributionList(users);
+      })
       .catch(() => setAttributionList([]));
   }, [isAgent]);
 
